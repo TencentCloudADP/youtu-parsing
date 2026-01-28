@@ -213,10 +213,10 @@ If you find Youtu-Parsing useful in your research or applications, please consid
   title={Youtu-VL: Unleashing Visual Potential via Unified Vision-Language Supervision},
   author={Tencent Youtu Lab},
   year={2026},
-  eprint={},
-  archivePrefix={},
-  primaryClass={},
-  url={}, 
+  eprint={2601.19798},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV},
+  url={https://arxiv.org/abs/2601.19798}, 
 }
 
 @article{youtu-llm,
