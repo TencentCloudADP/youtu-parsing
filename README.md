@@ -12,6 +12,7 @@
 <p align="center">
     <a href="LICENSE"><b>📄 License</b></a> •
     <a href="https://huggingface.co/spaces/Tencent/Youtu-Parsing"><b>🖥️ Demo</b></a> •
+    <a href="https://arxiv.org/abs/2601.20430"><b>📑 Technical Report</b></a> •
     <a href="#quick-start"><b>🚀 Quick Start</b></a> •
     <a href="#performance"><b>📊 Performance</b></a> •
     <!-- <a href="#-citation"><b>📄 Technical Report</b></a> • -->
@@ -203,10 +204,10 @@ If you find Youtu-Parsing useful in your research or applications, please consid
   title={Youtu-Parsing: Perception, Structuring and Recognition via High-Parallelism Decoding},
   author={Tencent Youtu Lab},
   year={2026},
-  eprint={},
-  archivePrefix={},
-  primaryClass={},
-  url={}, 
+  eprint={2601.20430},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV},
+  url={https://arxiv.org/abs/2601.20430}, 
 }
 
 @article{youtu-vl,
