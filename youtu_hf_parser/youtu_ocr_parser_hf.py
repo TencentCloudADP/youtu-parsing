@@ -83,7 +83,7 @@ class YoutuOCRParserHF:
         """Setup angle correction module if enabled."""
         self.enable_angle_correct = enable_angle_correct
         if self.enable_angle_correct:
-            self.angle_corrector = AngleCorrector()
+            self.angle_corrector = AngleCorrector(model_path)
 
     def _validate_pixel_constraints(self, min_pixels: int, max_pixels: int) -> None:
         """Validate pixel constraints are within acceptable ranges."""
@@ -513,9 +513,18 @@ class YoutuOCRParserHF:
         
 
         # Build hierarchical JSON structure from layout analysis results
-        hierarchy_json = build_hierarchy_json(
-            hierarchy_results, result, new_to_orig_idx
-        )
+        try:
+            hierarchy_json = build_hierarchy_json(
+                hierarchy_results, result, new_to_orig_idx
+            )
+        except Exception as e:
+            print(f"[WARNING] Failed to build hierarchy JSON: {e}")
+            hierarchy_json = {
+                "total_nodes": 0,
+                "root_count": 0,
+                "max_level": 0,
+                "nodes": []
+            }
 
         return result, page_angle, hierarchy_json
 
