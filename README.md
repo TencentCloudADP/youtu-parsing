@@ -107,7 +107,7 @@ from youtu_hf_parser import YoutuOCRParserHF
 parser = YoutuOCRParserHF(
     model_path=model_path,                    # Path to downloaded model weights
     enable_angle_correct=True,                # Set to False to disable angle correction
-    angle_correct_model_path=angle_correct_model_path  # Path to angle correction model
+    angle_correct_model_path=angle_correct_model_path  # If None, model will auto-download to default path; if custom path, manually download https://github.com/TencentCloudADP/youtu-parsing/releases/download/v1.0.0/model.pth to specified location
 )
 
 # Parse a document (supports images, PDFs, and more)

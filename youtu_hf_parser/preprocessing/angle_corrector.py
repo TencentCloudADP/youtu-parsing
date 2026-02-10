@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 from PIL import Image
 import urllib.request
+import ssl
 import sys
 
 from .angle_predictor.angle_predictor import AnglePredictor
@@ -13,14 +14,18 @@ class AngleCorrector(object):
     Supports both OpenCV and PIL image input.
     """
 
-    def __init__(self, pad_value=(255, 255, 255)):
+    def __init__(self, model_path, pad_value=(255, 255, 255)):
         """
         Args:
             pad_value (tuple): Padding value for rotated image border.
         """
         # Use model_weight folder in the same directory as this script
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        self.model_path = os.path.join(current_dir, "model_weight")
+        if not model_path:
+            self.model_path = os.path.join(current_dir, "model_weight")
+        else:
+            self.model_path = model_path
+
         self.model = None
         self.pad_value = pad_value
         self.initialize_model()
@@ -44,13 +49,20 @@ class AngleCorrector(object):
             # Create directory if not exists
             os.makedirs(os.path.dirname(ckpt_path), exist_ok=True)
             
-            # Download with progress
+            # Download with progress (bypass SSL verification for environments without root certs)
             def reporthook(count, block_size, total_size):
                 if total_size > 0:
                     percent = min(int(count * block_size * 100 / total_size), 100)
                     sys.stdout.write(f"\rDownloading: {percent}%")
                     sys.stdout.flush()
             
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            opener = urllib.request.build_opener(
+                urllib.request.HTTPSHandler(context=ssl_context)
+            )
+            urllib.request.install_opener(opener)
             urllib.request.urlretrieve(model_url, ckpt_path, reporthook=reporthook)
             print("\n✓ Model downloaded successfully!")
             return True
@@ -86,7 +98,7 @@ class AngleCorrector(object):
                 raise FileNotFoundError(
                     f"Model checkpoint not found or invalid at: {ckpt_path}\n"
                     f"Please manually download from:\n"
-                    f"https://github.com/svlys/ptdmodels/releases/download/v1.0.0/model.pth"
+                    f"https://github.com/TencentCloudADP/youtu-parsing/releases/download/v1.0.0/model.pth"
                 )
         
         print(f"Loading angle correction model from: {self.model_path}")

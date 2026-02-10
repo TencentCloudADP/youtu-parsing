@@ -236,7 +236,7 @@ def parse_hierarchy(hierarchy_str: str,
         return {}
     
     # If no hierarchy relationships exist, all nodes are root nodes
-    if not hierarchy_str or not hierarchy_str.strip():
+    if not hierarchy_str or not isinstance(hierarchy_str, str) or not hierarchy_str.strip():
         return {}
     
     # Parse relationship string
@@ -287,8 +287,16 @@ def parse_hierarchy(hierarchy_str: str,
                 child_node = nodes[child_orig_idx]
                 parent_node = nodes[parent_orig_idx]
                 
+                # If child already has a parent, remove it from the old parent's children first
+                if child_node.parent is not None:
+                    old_parent = child_node.parent
+                    if child_node in old_parent.children:
+                        old_parent.children.remove(child_node)
+                
                 child_node.parent = parent_node
-                parent_node.children.append(child_node)
+                # Avoid duplicate children
+                if child_node not in parent_node.children:
+                    parent_node.children.append(child_node)
     
     # Process sibling relationships - siblings should share the same parent
     sibling_pairs = []
@@ -296,29 +304,54 @@ def parse_hierarchy(hierarchy_str: str,
         if rel_type == 'sibling':
             sibling1_orig_idx = new_to_orig_map.get(node1_id)
             sibling2_orig_idx = new_to_orig_map.get(node2_id)
-            if sibling1_orig_idx and sibling2_orig_idx:
+            if sibling1_orig_idx is not None and sibling2_orig_idx is not None:
                 sibling_pairs.append((sibling1_orig_idx, sibling2_orig_idx))
     
-    # Assign parent nodes to siblings
-    for sibling1_idx, sibling2_idx in sibling_pairs:
-        if sibling1_idx in nodes and sibling2_idx in nodes:
-            node1 = nodes[sibling1_idx]
-            node2 = nodes[sibling2_idx]
-            
-            # If one sibling has a parent, assign it to the other
-            if node1.parent and not node2.parent:
-                node2.parent = node1.parent
-                node1.parent.children.append(node2)
-            elif node2.parent and not node1.parent:
-                node1.parent = node2.parent
-                node2.parent.children.append(node1)
+    # Assign parent nodes to siblings (iterate until no changes to handle chained siblings)
+    changed = True
+    max_iterations = len(sibling_pairs) + 1  # prevent infinite loop
+    iteration = 0
+    while changed and iteration < max_iterations:
+        changed = False
+        iteration += 1
+        for sibling1_idx, sibling2_idx in sibling_pairs:
+            if sibling1_idx in nodes and sibling2_idx in nodes:
+                node1 = nodes[sibling1_idx]
+                node2 = nodes[sibling2_idx]
+                
+                # If one sibling has a parent, assign it to the other
+                if node1.parent and not node2.parent:
+                    node2.parent = node1.parent
+                    if node2 not in node1.parent.children:
+                        node1.parent.children.append(node2)
+                    changed = True
+                elif node2.parent and not node1.parent:
+                    node1.parent = node2.parent
+                    if node1 not in node2.parent.children:
+                        node2.parent.children.append(node1)
+                    changed = True
     
-    # Recursively calculate node levels
-    def calculate_level(node: TreeNode) -> int:
-        """Calculate hierarchy level for a node."""
+    # Recursively calculate node levels with cycle detection
+    def calculate_level(node: TreeNode, visited: set = None) -> int:
+        """Calculate hierarchy level for a node with cycle detection."""
+        if visited is None:
+            visited = set()
+        
+        # Check for cycles
+        if node.id in visited:
+            # Cycle detected, treat as root node
+            return 1
+        
         if node.parent is None:
             return 1
-        return calculate_level(node.parent) + 1
+        
+        # Add current node to visited set
+        visited.add(node.id)
+        level = calculate_level(node.parent, visited) + 1
+        # Remove current node from visited set for other paths
+        visited.remove(node.id)
+        
+        return level
     
     # Compute levels for all nodes
     for node in nodes.values():
@@ -371,10 +404,13 @@ def build_hierarchy_json(hierarchy_str: str,
             "nodes": []
         }
     
+    # Track visited nodes to prevent infinite recursion in node_to_dict
+    visited_in_dict = set()
+    
     # Helper function to recursively convert TreeNode to nested dictionary
     def node_to_dict(node) -> Dict[str, Any]:
         """
-        Convert TreeNode to nested dictionary structure.
+        Convert TreeNode to nested dictionary structure with cycle detection.
         This preserves the correct tree relationships built by parse_hierarchy:
         - Parent-child relationships (child << parent)
         - Sibling relationships (sibling1 ++ sibling2)
@@ -386,7 +422,7 @@ def build_hierarchy_json(hierarchy_str: str,
         }
         
         # Get data from result_items (which already has transformed coordinates)
-        if result_items and node.id < len(result_items):
+        if result_items and 0 <= node.id < len(result_items):
             item = result_items[node.id]
             
             # Add content if available
@@ -401,8 +437,13 @@ def build_hierarchy_json(hierarchy_str: str,
             if "type" in item:
                 node_data["type"] = item["type"]
         
-        # Recursively convert children to preserve tree structure
-        node_data["children"] = [node_to_dict(child) for child in node.children]
+        # Recursively convert children with cycle detection
+        if node.id not in visited_in_dict:
+            visited_in_dict.add(node.id)
+            node_data["children"] = [node_to_dict(child) for child in node.children]
+            visited_in_dict.discard(node.id)
+        else:
+            node_data["children"] = []
         
         return node_data
     
