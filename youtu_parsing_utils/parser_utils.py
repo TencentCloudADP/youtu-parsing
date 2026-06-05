@@ -137,6 +137,7 @@ def categorize_layout_items(layout_items: List[List]) -> Dict[str, List[int]]:
         'figure_indices': [],    
         'chart_indices': [],     
         'table_indices': [],     
+        'formula_indices': [],   
         'ocr_indices': [],      
         'seal_indices': [],    
         'skip_indices': []   
@@ -151,12 +152,16 @@ def categorize_layout_items(layout_items: List[List]) -> Dict[str, List[int]]:
             categories['chart_indices'].append(i)
         elif layout_type == "Table":
             categories['table_indices'].append(i)
+        elif layout_type == "Formula":
+            # Formulas (especially matrices) are unstable in batch processing,
+            # so they are categorized separately and processed individually.
+            categories['formula_indices'].append(i)
         elif layout_type in ["Header_Figure", "Footer_Figure"]:
             categories['skip_indices'].append(i)
         elif layout_type == "Seal":
             categories['seal_indices'].append(i)
         else:
-            # TEXT, HEADER, FOOTER, CODE, CAPTION, TITLE, FORMULA
+            # TEXT, HEADER, FOOTER, CODE, CAPTION, TITLE
             categories['ocr_indices'].append(i)
     
     return categories

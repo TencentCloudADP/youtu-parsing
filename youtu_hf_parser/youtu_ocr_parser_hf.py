@@ -60,10 +60,13 @@ class YoutuOCRParserHF:
 
     def _load_hf_model(self, model_path: str) -> None:
         """Load HuggingFace model and processor."""
-        # Load model with flash attention and bfloat16 for efficiency
+        # Determine attention implementation: use flash_attention_2 if CUDA is available
+        attn_impl = "flash_attention_2" if torch.cuda.is_available() else "eager"
+        
+        # Load model with appropriate attention and bfloat16 for efficiency
         self.model = AutoModelForCausalLM.from_pretrained(
             model_path,
-            attn_implementation="flash_attention_2",
+            attn_implementation=attn_impl,
             torch_dtype=torch.bfloat16,
             device_map="auto",
             trust_remote_code=True
@@ -96,7 +99,8 @@ class YoutuOCRParserHF:
         
         # These modes require region coordinates to be injected into prompt
         region_specific_modes = ["text_recognize", "title_recognize", "table_recognize", 
-                                 "chart_logic_recognize", "chart_data_recognize"]
+                                 "chart_logic_recognize", "chart_data_recognize",
+                                 "formula_recognize"]
         if prompt_mode in region_specific_modes:
             assert bbox is not None, f"Bounding box required for {prompt_mode}"
             # Format prompt with bbox coordinates [x1, y1, x2, y2]
@@ -213,7 +217,7 @@ class YoutuOCRParserHF:
         )
         
         output_text, _, _, new_embeds = self._inference_with_hf(image, combined_query, image_embeds)
-        
+        # print(output_text)
         # Parse model output into individual bbox results
         return parse_batch_results(output_text, len(bbox_list)), \
                new_embeds if image_embeds is None else image_embeds
@@ -296,6 +300,41 @@ class YoutuOCRParserHF:
                 print(f"TABLE recognition or HTML conversion error: {e}")
                 recognize_results[i] = ""
 
+    def _process_formula(self, 
+                         image: Image.Image, 
+                         layout_items: List[List], 
+                         formula_indices: List[int], 
+                         recognize_results: List[str], 
+                         image_embeds: torch.Tensor) -> None:
+        """
+        Process formula items individually with region-based recognition.
+
+        Formulas (especially matrices) are very unstable when processed in
+        batch mode (multiple regions combined into a single query). To improve
+        recognition stability, each formula region is processed separately
+        with a dedicated single-region query.
+
+        Args:
+            image: Input PIL Image
+            layout_items: List of layout items, each [x1, y1, x2, y2, layout_type]
+            formula_indices: Indices of formula items to process
+            recognize_results: Result list to be filled in-place
+            image_embeds: Pre-computed image embeddings (reused across regions)
+        """
+        for i in formula_indices:
+            try:
+                x1, y1, x2, y2, layout_type = layout_items[i]
+                # Use a dedicated single-region formula prompt instead of
+                # the batched OCR query to avoid instability with matrices.
+                prompt_box = self._get_prompt("formula_recognize", [x1, y1, x2, y2])
+                response_box_content, _, _, _ = self._inference_with_hf(
+                    image, prompt_box, image_embeds
+                )
+                recognize_results[i] = response_box_content if response_box_content else ""
+            except Exception as e:
+                print(f"FORMULA recognition error: {e}")
+                recognize_results[i] = ""
+
     def _process_ocr_items_batch(self, 
                                 image: Image.Image, 
                                 layout_items: List[List], 
@@ -320,6 +359,7 @@ class YoutuOCRParserHF:
                     image_embeds=image_embeds, 
                     max_batch_size=batch_size
                 )
+                # print()
                 
                 # Validate result count matches input count
                 if len(batch_results) != len(batch_bboxes):
@@ -439,6 +479,13 @@ class YoutuOCRParserHF:
         # Process seal elements 
         self._process_seal_items(
             image, layout_items, categories['seal_indices'], 
+            recognize_results, image_embeds
+        )
+        
+        # Process formula elements individually (NOT batched).
+        # Batch processing is unstable for formulas, especially matrices.
+        self._process_formula(
+            image, layout_items, categories['formula_indices'], 
             recognize_results, image_embeds
         )
         
