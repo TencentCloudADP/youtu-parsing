@@ -6,6 +6,7 @@ PROMPT_DICT = {
     ),
 
     # Template for recognizing text within a bounding box.
+    # Also reused for formula recognition (formulas use the LAYOUT_TEXT label).
     "text_recognize": (
         "Based on the given input field coordinates and layout type, identify and extract "
         "the content within the specified region. Formulas shall be represented in LaTeX "
@@ -27,15 +28,6 @@ PROMPT_DICT = {
         "the content within the specified region. Formulas shall be represented in LaTeX "
         "notation, and tables shall be structured in OTSL format: "
         "<x_{}><y_{}><x_{}><y_{}><LAYOUT_TABLE>"
-    ),
-
-    # Template for recognizing formula within a bounding box.
-    # Formulas (especially matrices) are processed individually for stability.
-    "formula_recognize": (
-        "Based on the given input field coordinates and layout type, identify and extract "
-        "the content within the specified region. Formulas shall be represented in LaTeX "
-        "notation, and tables shall be structured in OTSL format: "
-        "<x_{}><y_{}><x_{}><y_{}><LAYOUT_TEXT>"
     ),
 
     # Template for recognizing chart within a bounding box.

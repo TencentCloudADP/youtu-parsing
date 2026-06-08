@@ -99,8 +99,7 @@ class YoutuOCRParserHF:
         
         # These modes require region coordinates to be injected into prompt
         region_specific_modes = ["text_recognize", "title_recognize", "table_recognize", 
-                                 "chart_logic_recognize", "chart_data_recognize",
-                                 "formula_recognize"]
+                                 "chart_logic_recognize", "chart_data_recognize"]
         if prompt_mode in region_specific_modes:
             assert bbox is not None, f"Bounding box required for {prompt_mode}"
             # Format prompt with bbox coordinates [x1, y1, x2, y2]
@@ -217,7 +216,6 @@ class YoutuOCRParserHF:
         )
         
         output_text, _, _, new_embeds = self._inference_with_hf(image, combined_query, image_embeds)
-        # print(output_text)
         # Parse model output into individual bbox results
         return parse_batch_results(output_text, len(bbox_list)), \
                new_embeds if image_embeds is None else image_embeds
@@ -311,8 +309,9 @@ class YoutuOCRParserHF:
 
         Formulas (especially matrices) are very unstable when processed in
         batch mode (multiple regions combined into a single query). To improve
-        recognition stability, each formula region is processed separately
-        with a dedicated single-region query.
+        recognition stability, each formula region is processed separately by
+        reusing the single-region branch of ``_infer_bbox_query_batch``
+        (``max_batch_size=1``), which keeps the inference logic in one place.
 
         Args:
             image: Input PIL Image
@@ -324,13 +323,13 @@ class YoutuOCRParserHF:
         for i in formula_indices:
             try:
                 x1, y1, x2, y2, layout_type = layout_items[i]
-                # Use a dedicated single-region formula prompt instead of
-                # the batched OCR query to avoid instability with matrices.
-                prompt_box = self._get_prompt("formula_recognize", [x1, y1, x2, y2])
-                response_box_content, _, _, _ = self._inference_with_hf(
-                    image, prompt_box, image_embeds
+                # Single-region query (max_batch_size=1) to avoid batch
+                # instability with matrices, while reusing batch inference code.
+                results, _ = self._infer_bbox_query_batch(
+                    image, [[x1, y1, x2, y2]], [layout_type], 
+                    image_embeds=image_embeds, max_batch_size=1
                 )
-                recognize_results[i] = response_box_content if response_box_content else ""
+                recognize_results[i] = results[0] if results else ""
             except Exception as e:
                 print(f"FORMULA recognition error: {e}")
                 recognize_results[i] = ""
@@ -359,7 +358,6 @@ class YoutuOCRParserHF:
                     image_embeds=image_embeds, 
                     max_batch_size=batch_size
                 )
-                # print()
                 
                 # Validate result count matches input count
                 if len(batch_results) != len(batch_bboxes):
