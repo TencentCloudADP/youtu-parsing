@@ -6,6 +6,7 @@ PROMPT_DICT = {
     ),
 
     # Template for recognizing text within a bounding box.
+    # Also reused for formula recognition (formulas use the LAYOUT_TEXT label).
     "text_recognize": (
         "Based on the given input field coordinates and layout type, identify and extract "
         "the content within the specified region. Formulas shall be represented in LaTeX "

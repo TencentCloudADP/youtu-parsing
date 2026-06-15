@@ -60,10 +60,13 @@ class YoutuOCRParserHF:
 
     def _load_hf_model(self, model_path: str) -> None:
         """Load HuggingFace model and processor."""
-        # Load model with flash attention and bfloat16 for efficiency
+        # Determine attention implementation: use flash_attention_2 if CUDA is available
+        attn_impl = "flash_attention_2" if torch.cuda.is_available() else "eager"
+        
+        # Load model with appropriate attention and bfloat16 for efficiency
         self.model = AutoModelForCausalLM.from_pretrained(
             model_path,
-            attn_implementation="flash_attention_2",
+            attn_implementation=attn_impl,
             torch_dtype=torch.bfloat16,
             device_map="auto",
             trust_remote_code=True
@@ -213,7 +216,6 @@ class YoutuOCRParserHF:
         )
         
         output_text, _, _, new_embeds = self._inference_with_hf(image, combined_query, image_embeds)
-        
         # Parse model output into individual bbox results
         return parse_batch_results(output_text, len(bbox_list)), \
                new_embeds if image_embeds is None else image_embeds
@@ -294,6 +296,42 @@ class YoutuOCRParserHF:
                 recognize_results[i] = convert_table_ostl_to_html(response_box_content) if response_box_content else ""
             except Exception as e:
                 print(f"TABLE recognition or HTML conversion error: {e}")
+                recognize_results[i] = ""
+
+    def _process_formula(self, 
+                         image: Image.Image, 
+                         layout_items: List[List], 
+                         formula_indices: List[int], 
+                         recognize_results: List[str], 
+                         image_embeds: torch.Tensor) -> None:
+        """
+        Process formula items individually with region-based recognition.
+
+        Formulas (especially matrices) are very unstable when processed in
+        batch mode (multiple regions combined into a single query). To improve
+        recognition stability, each formula region is processed separately by
+        reusing the single-region branch of ``_infer_bbox_query_batch``
+        (``max_batch_size=1``), which keeps the inference logic in one place.
+
+        Args:
+            image: Input PIL Image
+            layout_items: List of layout items, each [x1, y1, x2, y2, layout_type]
+            formula_indices: Indices of formula items to process
+            recognize_results: Result list to be filled in-place
+            image_embeds: Pre-computed image embeddings (reused across regions)
+        """
+        for i in formula_indices:
+            try:
+                x1, y1, x2, y2, layout_type = layout_items[i]
+                # Single-region query (max_batch_size=1) to avoid batch
+                # instability with matrices, while reusing batch inference code.
+                results, _ = self._infer_bbox_query_batch(
+                    image, [[x1, y1, x2, y2]], [layout_type], 
+                    image_embeds=image_embeds, max_batch_size=1
+                )
+                recognize_results[i] = results[0] if results else ""
+            except Exception as e:
+                print(f"FORMULA recognition error: {e}")
                 recognize_results[i] = ""
 
     def _process_ocr_items_batch(self, 
@@ -439,6 +477,13 @@ class YoutuOCRParserHF:
         # Process seal elements 
         self._process_seal_items(
             image, layout_items, categories['seal_indices'], 
+            recognize_results, image_embeds
+        )
+        
+        # Process formula elements individually (NOT batched).
+        # Batch processing is unstable for formulas, especially matrices.
+        self._process_formula(
+            image, layout_items, categories['formula_indices'], 
             recognize_results, image_embeds
         )
         
