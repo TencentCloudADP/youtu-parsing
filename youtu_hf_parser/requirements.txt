@@ -8,4 +8,4 @@ opencv-python-headless==4.12.0.88
 numba==0.60.0
 Pillow>=8.0.0
 tqdm
-git+https://git.tencent.com/marcowu/youtu-parsing-sdk.git#subdirectory=youtu_parsing_utils
+youtu-parsing-utils @ git+https://github.com/TencentCloudADP/youtu-parsing.git#subdirectory=youtu_parsing_utils
