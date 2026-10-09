@@ -1,0 +1,4 @@
+# Hugging Face Transformers inference (examples/infer_transformers.py).
+# Use a separate environment from requirements/vllm.txt (vLLM needs transformers==5.2.0).
+transformers==5.10.2
+accelerate

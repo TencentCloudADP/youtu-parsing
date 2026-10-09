@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+.pytest_cache/
+.venv/
+venv/
+
+/youtu_parsing_omni/outputs/
+/youtu_parsing_omni/local/
+*.log
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store

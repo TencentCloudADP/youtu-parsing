@@ -26,6 +26,12 @@
 <img src="./assets/static_v40.png" width="800"/>
 </div>
 
+> **🆕 Youtu-Parsing-Omni**: an omni-modal parsing model for documents, images, charts, geometry, audio and video. See [`youtu_parsing_omni`](youtu_parsing_omni/) and the [technical report](youtu_parsing_omni/paper/Youtu_Parsing_Omni.pdf).
+
+<div align="center">
+<img src="./youtu_parsing_omni/assets/overview_figure.png" width="800" alt="Youtu-Parsing-Omni: one encoder, one schema, every modality"/>
+</div>
+
 ## 🎯 Introduction
 
 **Youtu-Parsing** is a specialized document parsing model built upon the open-source Youtu-LLM 2B foundation. By extending the capabilities of the base model with a prompt-guided framework and NaViT-style dynamic visual encoder, Youtu-Parsing offers enhanced parsing capabilities for diverse document elements including text, tables, formulas, and charts. The model incorporates an efficient parallel decoding mechanism that significantly accelerates inference, making it practical for real-world document analysis applications. We share Youtu-Parsing with the community to facilitate research and development in document understanding.

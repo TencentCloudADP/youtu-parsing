@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vllm-plugin-vita-omni"
+version = "0.2.0"
+description = "vLLM out-of-tree plugin for Youtu-Parsing-Omni (youtu_vita, image / audio / video)."
+requires-python = ">=3.10"
+dependencies = []
+
+[project.entry-points."vllm.general_plugins"]
+vita_omni = "vita_omni:register"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["vita_omni*"]
+
+[tool.setuptools.package-data]
+vita_omni = ["assets/**/*.json"]

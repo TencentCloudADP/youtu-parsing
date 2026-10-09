@@ -1,0 +1,8 @@
+# vLLM serving environment. Install transformers==5.2.0 afterwards (scripts/setup_env.sh does this):
+# vllm declares transformers<5, but the plugin needs 5.2.0.
+vllm==0.19.0
+torchcodec==0.10.0
+flash-attn==2.8.3
+decord==0.6.0
+soundfile==0.13.1
+torchaudio==2.10.0
