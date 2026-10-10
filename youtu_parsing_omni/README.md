@@ -12,15 +12,19 @@
     <a href="#"><b>📑 Technical Report (coming soon)</b></a> •
     <a href="#quick-start"><b>🚀 Quick Start</b></a> •
     <a href="#results"><b>📊 Results</b></a> •
-    <a href="https://huggingface.co/tencent/Youtu-Parsing-Omni"><b>🤗 Models</b></a> •
     <a href="#citation"><b>📚 Citation</b></a>
+</p>
+
+<p align="center">
+    <a href="https://huggingface.co/tencent/Youtu-Parsing-Omni"><img src="https://img.shields.io/badge/Hugging%20Face-Youtu--Parsing--Omni-ffc107?logo=huggingface" alt="Hugging Face"></a>
+    <a href="https://www.modelscope.cn/models/tencent-community/Youtu-Parsing-Omni"><img src="https://img.shields.io/badge/ModelScope-Youtu--Parsing--Omni-624aff?logo=modelscope" alt="ModelScope"></a>
 </p>
 
 </div>
 
 ## News
 
-- **[TBD]** Open-source evaluation code will be released.
+- **[2026-10]** OmniDocBench evaluation code released (see [OmniDocBench Evaluation](#omnidocbench-evaluation)).
 - **[2026-10]** [Technical report](paper/Youtu_Parsing_Omni.pdf), model weights, vLLM plugin and inference examples released.
 
 ## Introduction
@@ -101,7 +105,7 @@ supervision co-evolve without a hand-designed reward or a separately trained tea
 
 | Model              | Parameters | Download                                                                                      |
 | ------------------ | ---------- | --------------------------------------------------------------------------------------------- |
-| Youtu-Parsing-Omni | 5B         | 🤗[Hugging Face](https://huggingface.co/tencent/Youtu-Parsing-Omni) |
+| Youtu-Parsing-Omni | 5B         | 🤗[Hugging Face](https://huggingface.co/tencent/Youtu-Parsing-Omni) \| 🤖[ModelScope](https://www.modelscope.cn/models/tencent-community/Youtu-Parsing-Omni) |
 
 ## Results
 
@@ -343,6 +347,23 @@ has a `global_description`.
 }
 ```
 
+## OmniDocBench Evaluation
+
+Inference runs in the vLLM environment; scoring uses the official
+[OmniDocBench](https://github.com/opendatalab/OmniDocBench) evaluator via Docker
+(`ghcr.io/zeng-weijun/omnidocbench-eval:repro-ubuntu2204`).
+
+```bash
+MODEL=tencent/Youtu-Parsing-Omni OMNIDOCBENCH=/path/to/OmniDocBench \
+OUTPUT_DIR=outputs/omnidocbench_$(date +%Y%m%d_%H%M%S) bash scripts/eval_omnidocbench.sh
+```
+
+- `OMNIDOCBENCH`: dataset directory containing `images/` and `OmniDocBench.json`.
+- `GPUS`: GPUs to use (default: all visible), one vLLM server per GPU.
+- To resume, rerun with the existing `OUTPUT_DIR` path (not a new timestamp).
+- Outputs: predictions in `<OUTPUT_DIR>/predictions/`, final report in `<OUTPUT_DIR>/results.md`,
+  logs in `<OUTPUT_DIR>/logs/`.
+
 ## Repository Structure
 
 ```text
@@ -352,11 +373,15 @@ youtu_parsing_omni/          # youtu-parsing/youtu_parsing_omni
 ├── examples/
 │   ├── infer_vllm.py        # parse one file with a running vLLM server
 │   └── infer_transformers.py  # parse one file with Hugging Face Transformers
+├── evaluation/
+│   ├── infer_omnidocbench.py  # OmniDocBench inference against vLLM servers
+│   └── postprocess/         # JSON repair, tail-repetition trimming, document JSON -> Markdown
 ├── prompts/
 │   └── youtu_parsing_omni.json  # task prompts (one per --task)
 ├── scripts/
 │   ├── setup_env.sh         # environment setup (vLLM / Transformers)
-│   └── vllm.sh              # one vLLM server per GPU with the reported settings
+│   ├── vllm.sh              # one vLLM server per GPU with the reported settings
+│   └── eval_omnidocbench.sh # OmniDocBench inference + official evaluator (Docker)
 ├── requirements/            # vllm.txt, transformers.txt
 ├── paper/
 │   └── Youtu_Parsing_Omni.pdf  # technical report

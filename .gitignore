@@ -10,6 +10,7 @@ dist/
 venv/
 
 /youtu_parsing_omni/outputs/
+/youtu_parsing_omni/third_party/OmniDocBench/
 /youtu_parsing_omni/local/
 *.log
 

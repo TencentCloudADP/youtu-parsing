@@ -6,3 +6,7 @@ flash-attn==2.8.3
 decord==0.6.0
 soundfile==0.13.1
 torchaudio==2.10.0
+# evaluation/infer_omnidocbench.py post-processing (document JSON -> Markdown)
+lxml>=4.9
+markdown>=3.4
+requests>=2.28
