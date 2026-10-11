@@ -138,6 +138,29 @@ class VITAProcessingInfo(BaseProcessingInfo):
     def get_supported_mm_limits(self) -> Mapping[str, int | None]:
         return {"image": None, "audio": None, "video": None}
 
+    def _get_processor_config(self) -> dict:
+        """The checkpoint's ``processor_config.json`` as a dict. ``model_id``
+        may be a local directory or a Hugging Face repo id (resolved from the
+        HF cache / Hub at the served revision, as vLLM does for its own
+        configs). Cached per instance; ``{}`` if it cannot be loaded."""
+        cached = getattr(self, "_processor_config", None)
+        if cached is not None:
+            return cached
+        from vllm.transformers_utils.repo_utils import get_hf_file_to_dict
+        cfg = None
+        try:
+            revision = getattr(self.ctx.model_config, "revision", None)
+            cfg = get_hf_file_to_dict("processor_config.json", self.model_id, revision)
+        except Exception as _e:  # noqa: BLE001
+            _LOG.warning("processor_config.json of %s could not be loaded: %s",
+                         self.model_id, _e)
+        if not isinstance(cfg, dict):
+            _LOG.warning("processor_config.json not found for %s; using the "
+                         "native processor defaults", self.model_id)
+            cfg = {}
+        self._processor_config = cfg
+        return cfg
+
     def get_mm_max_tokens_per_item(
         self,
         seq_len: int,
@@ -195,16 +218,10 @@ class VITAProcessingInfo(BaseProcessingInfo):
             "video_image_max_num_tokens": 256,
         }
         try:
-            import json as _json
-            import os as _os
-            model_path = self.model_id
-            cfg_path = _os.path.join(model_path, "processor_config.json")
-            if _os.path.isfile(cfg_path):
-                with open(cfg_path) as _f:
-                    vp = _json.load(_f).get("video_processor", {}) or {}
-                for k in list(budget.keys()):
-                    if k in vp and vp[k] is not None:
-                        budget[k] = vp[k]
+            vp = self._get_processor_config().get("video_processor", {}) or {}
+            for k in list(budget.keys()):
+                if k in vp and vp[k] is not None:
+                    budget[k] = vp[k]
         except Exception as _e:
             _LOG.warning("get_video_token_budget: fallback to defaults: %s", _e)
 
@@ -273,16 +290,10 @@ class VITAProcessingInfo(BaseProcessingInfo):
             "image_max_num_tokens": 256,
         }
         try:
-            import json as _json
-            import os as _os
-            model_path = self.model_id
-            cfg_path = _os.path.join(model_path, "processor_config.json")
-            if _os.path.isfile(cfg_path):
-                with open(cfg_path) as _f:
-                    ip = _json.load(_f).get("image_processor", {}) or {}
-                for k in list(budget.keys()):
-                    if k in ip and ip[k] is not None:
-                        budget[k] = ip[k]
+            ip = self._get_processor_config().get("image_processor", {}) or {}
+            for k in list(budget.keys()):
+                if k in ip and ip[k] is not None:
+                    budget[k] = ip[k]
         except Exception as _e:
             _LOG.warning("get_image_token_budget: fallback to defaults: %s", _e)
 
@@ -336,23 +347,17 @@ class VITAProcessingInfo(BaseProcessingInfo):
             return configured
         path = None
         try:
-            import json as _json
-            import os as _os
-            model_path = self.model_id
-            cfg_path = _os.path.join(model_path, "processor_config.json")
-            if _os.path.isfile(cfg_path):
-                with open(cfg_path) as _f:
-                    fe = _json.load(_f).get("feature_extractor", {}) or {}
-                atp = fe.get("audio_tokenizer_path")
-                if isinstance(atp, list):
-                    atp = atp[0] if atp else None
-                if isinstance(atp, str) and atp:
-                    if _os.path.isabs(atp) and not _os.path.isdir(atp):
-                        _LOG.info(
-                            "get_whisper_path: %s does not exist; using the bundled "
-                            "feature extractor config", atp)
-                    else:
-                        path = atp
+            fe = self._get_processor_config().get("feature_extractor", {}) or {}
+            atp = fe.get("audio_tokenizer_path")
+            if isinstance(atp, list):
+                atp = atp[0] if atp else None
+            if isinstance(atp, str) and atp:
+                if os.path.isabs(atp) and not os.path.isdir(atp):
+                    _LOG.info(
+                        "get_whisper_path: %s does not exist; using the bundled "
+                        "feature extractor config", atp)
+                else:
+                    path = atp
         except Exception as _e:
             _LOG.warning("get_whisper_path: fallback to default: %s", _e)
         if not path:
