@@ -9,7 +9,7 @@
 <!-- Quick Links -->
 <p align="center">
     <a href="https://github.com/TencentCloudADP/youtu-parsing/blob/main/LICENSE"><b>📄 License</b></a> •
-    <a href="#"><b>📑 Technical Report (coming soon)</b></a> •
+    <a href="https://arxiv.org/abs/2610.39301"><b>📑 Technical Report</b></a> •
     <a href="#quick-start"><b>🚀 Quick Start</b></a> •
     <a href="#results"><b>📊 Results</b></a> •
     <a href="#citation"><b>📚 Citation</b></a>
@@ -25,7 +25,7 @@
 ## News
 
 - **[2026-10]** OmniDocBench evaluation code released (see [OmniDocBench Evaluation](#omnidocbench-evaluation)).
-- **[2026-10]** [Technical report](paper/Youtu_Parsing_Omni.pdf), model weights, vLLM plugin and inference examples released.
+- **[2026-10]** [Technical report](https://arxiv.org/abs/2610.39301), model weights, vLLM plugin and inference examples released.
 
 ## Introduction
 
@@ -49,7 +49,7 @@ selected by the task prompt (`--task` in the examples, keys of
 | Natural video   | `natural_video`      | `video` / `natural_video`   | temporal segments with visual elements, actions, interactions, camera motion, audio track                   |
 | Text-rich video | `textrich_video`     | `video` / `text_rich_video` | segments with OCR + ASR and a Markdown `structured_report` of the whole video                               |
 
-Highlights (see the [technical report](paper/Youtu_Parsing_Omni.pdf) for details):
+Highlights (see the [technical report](https://arxiv.org/abs/2610.39301) for details):
 
 - **Unified schema** – one JSON envelope for seven parsing families, driven by the task prompt.
 - **Omni encoder** – image, audio and interleaved audio-visual video inputs (frames + audio track) in a single model.
@@ -383,8 +383,6 @@ youtu_parsing_omni/          # youtu-parsing/youtu_parsing_omni
 │   ├── vllm.sh              # one vLLM server per GPU with the reported settings
 │   └── eval_omnidocbench.sh # OmniDocBench inference + official evaluator (Docker)
 ├── requirements/            # vllm.txt, transformers.txt
-├── paper/
-│   └── Youtu_Parsing_Omni.pdf  # technical report
 └── assets/                  # logo and README figures
 ```
 
@@ -394,10 +392,13 @@ If you find Youtu-Parsing-Omni useful in your research or applications, please c
 
 ```bibtex
 @article{youtu-parsing-omni,
-  title   = {Youtu-Parsing-Omni: One Encoder, One Schema, Every Modality},
+  title={Youtu-Parsing-Omni: One Encoder, One Schema, All Modalities},
   author={Tencent Youtu Lab},
-  journal = {arXiv preprint arXiv:[TBD]},
-  year    = {2026}
+  year={2026},
+  eprint={2610.39301},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV},
+  url={https://arxiv.org/abs/2610.39301},
 }
 
 @article{youtu-parsing,

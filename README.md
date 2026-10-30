@@ -26,10 +26,10 @@
 <img src="./assets/static_v40.png" width="800"/>
 </div>
 
-> **🆕 Youtu-Parsing-Omni**: an omni-modal parsing model for documents, images, charts, geometry, audio and video. See [`youtu_parsing_omni`](youtu_parsing_omni/) and the [technical report](youtu_parsing_omni/paper/Youtu_Parsing_Omni.pdf).
+> **🆕 Youtu-Parsing-Omni**: an omni-modal parsing model for documents, images, charts, geometry, audio and video. See [`youtu_parsing_omni`](youtu_parsing_omni/) and the [technical report](https://arxiv.org/abs/2610.39301).
 
 <div align="center">
-<img src="./youtu_parsing_omni/assets/overview_figure.png" width="800" alt="Youtu-Parsing-Omni: one encoder, one schema, every modality"/>
+<img src="./youtu_parsing_omni/assets/overview_figure.png" width="800" alt="Youtu-Parsing-Omni: One Encoder, One Schema, All Modalities"/>
 </div>
 
 ## 🎯 Introduction
@@ -203,9 +203,19 @@ We extend our gratitude to the following projects and communities that made Yout
 
 ## 📚 Citation
 
-If you find Youtu-Parsing useful in your research or applications, please consider citing our work:
+If you find Youtu-Parsing or Youtu-Parsing-Omni useful in your research or applications, please consider citing our work:
 
 ```bibtex
+@article{youtu-parsing-omni,
+  title={Youtu-Parsing-Omni: One Encoder, One Schema, All Modalities},
+  author={Tencent Youtu Lab},
+  year={2026},
+  eprint={2610.39301},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV},
+  url={https://arxiv.org/abs/2610.39301}, 
+}
+
 @article{youtu-parsing,
   title={Youtu-Parsing: Perception, Structuring and Recognition via High-Parallelism Decoding},
   author={Tencent Youtu Lab},
